@@ -22,14 +22,22 @@ const findAndDeleteLeadFromCampaign = async (campaignId, leadEmail) => {
   try {
     const response = await axios.post(url, data, { headers });
     console.log(`Response from Instantly API:`, response.data);
-    return console.log(
+    console.log(
       `Lead ${leadEmail} from campaign ${campaignId} has been deleted.`
     );
+    return response.data;
   } catch (error) {
-    console.error(
-      `Error deleting lead ${leadEmail} from campaign ${campaignId}:`,
-      error
-    );
+    if (error.response) {
+      console.error(`Error response data:`, error.response.data);
+      console.error(`Error response status:`, error.response.status);
+      console.error(`Error response headers:`, error.response.headers);
+    } else if (error.request) {
+      console.error(`Error request:`, error.request);
+    } else {
+      console.error("Error", error.message);
+    }
+    console.error(`Error config:`, error.config);
+    throw error;
   }
 };
 
@@ -43,11 +51,15 @@ app.post("/", async (req, res) => {
     const leadEmail = event.lead_email;
 
     if (campaignId && leadEmail) {
-      await findAndDeleteLeadFromCampaign(campaignId, leadEmail)
-        .then(() => res.status(200).send("Lead deleted from campaign.", res))
-        .catch((err) =>
-          res.status(500).send("Error deleting lead from campaign.")
+      try {
+        const result = await findAndDeleteLeadFromCampaign(
+          campaignId,
+          leadEmail
         );
+        res.status(200).send("Lead deleted from campaign.");
+      } catch (err) {
+        res.status(500).send("Error deleting lead from campaign.");
+      }
     } else {
       res.status(400).send("Invalid event data.");
     }
