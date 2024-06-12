@@ -21,9 +21,9 @@ const findAndDeleteLeadFromCampaign = async (campaignId, leadEmail) => {
 
   try {
     const response = await axios.post(url, data, { headers });
-    console.log(
-      `Lead ${leadEmail} from campaign ${campaignId} has been deleted.`,
-      response.data
+    console.log(`Response from Instantly API:`, response.data);
+    return console.log(
+      `Lead ${leadEmail} from campaign ${campaignId} has been deleted.`
     );
   } catch (error) {
     console.error(
@@ -33,7 +33,7 @@ const findAndDeleteLeadFromCampaign = async (campaignId, leadEmail) => {
   }
 };
 
-app.post("/", (req, res) => {
+app.post("/", async (req, res) => {
   const event = req.body;
 
   console.log("Received event:", event);
@@ -43,8 +43,8 @@ app.post("/", (req, res) => {
     const leadEmail = event.lead_email;
 
     if (campaignId && leadEmail) {
-      findAndDeleteLeadFromCampaign(campaignId, leadEmail)
-        .then(() => res.status(200).send("Lead deleted from campaign."))
+      await findAndDeleteLeadFromCampaign(campaignId, leadEmail)
+        .then(() => res.status(200).send("Lead deleted from campaign.", res))
         .catch((err) =>
           res.status(500).send("Error deleting lead from campaign.")
         );
