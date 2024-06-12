@@ -67,7 +67,7 @@ app.post("/", async (req, res) => {
 
   console.log("Received event:", event);
 
-  if (event.event_type === "campaign_completion") {
+  if (event.event_type === "campaign_completed") {
     const campaignId = event.campaign_id;
 
     if (campaignId) {
