@@ -45,7 +45,7 @@ const getLeadStatus = async (campaignId, email) => {
   }
 };
 
-const deleteLeadsFromCampaign = async (campaignId, leadEmails) => {
+const deleteLead = async (campaignId, leadEmail) => {
   const url = "https://api.instantly.ai/api/v1/lead/delete";
   const headers = {
     "Content-Type": "application/json",
@@ -54,19 +54,18 @@ const deleteLeadsFromCampaign = async (campaignId, leadEmails) => {
     api_key: process.env.API_KEY,
     campaign_id: campaignId,
     delete_all_from_company: false,
-    delete_list: leadEmails,
+    delete_list: [leadEmail],
   };
 
   try {
     const response = await axios.post(url, data, { headers });
-    console.log(`Response from Instantly API:`, response.data);
     console.log(
-      `Leads ${leadEmails} from campaign ${campaignId} have been deleted.`
+      `Lead ${leadEmail} from campaign ${campaignId} has been deleted. Response:`,
+      response.data
     );
     return response.data;
   } catch (error) {
-    console.error(`Error deleting leads:`, error);
-    throw error;
+    console.error(`Error deleting lead ${leadEmail}:`, error);
   }
 };
 
@@ -84,21 +83,27 @@ app.post("/", async (req, res) => {
         const validLeads = [];
 
         for (const email of leadEmails) {
-          const status = await getLeadStatus(campaignId, email);
-          if (status.toLowerCase() === "completed") {
-            validLeads.push(email);
-            console.log(`validLeads:`, validLeads);
+          try {
+            const status = await getLeadStatus(campaignId, email);
+            if (status.toLowerCase() === "completed") {
+              validLeads.push(email);
+              console.log(`validLeads:`, validLeads);
+            }
+          } catch (error) {
+            console.error(`Error checking status for lead ${email}:`, error);
           }
         }
 
         if (validLeads.length > 0) {
-          await deleteLeadsFromCampaign(campaignId, validLeads);
+          for (const email of validLeads) {
+            await deleteLead(campaignId, email);
+          }
           res.status(200).send("Leads deleted from campaign.");
         } else {
           res.status(200).send("No leads to delete.");
         }
       } catch (err) {
-        res.status(500).send("Error deleting leads from campaign.");
+        res.status(500).send("Error processing leads.");
       }
     } else {
       res.status(400).send("Invalid event data.");
